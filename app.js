@@ -1,5 +1,5 @@
 'use strict';
-const APP_VERSION='v1';
+const APP_VERSION='v2';
 
 /* ---------------- state ---------------- */
 const LS='runway:v1';
@@ -58,7 +58,9 @@ const LEVEL_ICON={over:'\u{1F6A8}',red:'\u{1F534}',amber:'\u{1F7E0}',ok:'\u{1F7E
 function visaStat(t,asOf){
   const r=ruleFor(t.cc); if(!r.visa||!r.visa.days) return null;
   const used=diffDays(t.arrive,asOf)+1;
-  return {used,limit:r.visa.days,left:r.visa.days-used,lastDay:addDays(t.arrive,r.visa.days-1)};
+  const base=r.visa.days, ext=r.visa.ext||0;
+  const limit=base+(t.ext?ext:0);
+  return {used,base,ext,limit,left:limit-used,lastDay:addDays(t.arrive,limit-1),canExtend:!t.ext&&ext>0};
 }
 
 /* first date (searching from `from` to `to`) where tax threshold is reached; null if never */
@@ -103,7 +105,7 @@ function renderToday(){
         <div class="muted">Day ${entryDay} of this entry · since ${fmtShort(cur.arrive)}</div>
         ${vs?`<div class="${vs.left<0?'bad':vs.left<=10?'warn':''}">${vs.left>=0
             ?`${vs.left} visa day${vs.left===1?'':'s'} left (limit ${vs.limit}d, last day ${fmtShort(vs.lastDay)})`
-            :`\u{1F6A8} ${-vs.left}d over the ${vs.limit}d visa limit`}</div>`:''}
+            :`\u{1F6A8} ${-vs.left}d over the ${vs.limit}d visa limit`}${vs.canExtend?` — extendable +${vs.ext}d in-country`:''}</div>`:''}
         ${td?`<div class="muted">Tax clock: ${td.days} / ${td.limit}d ${td.window==='cal'?'this year':td.window==='roll'?'(rolling 365)':''} ${td.generic?'· generic':''}</div>`:''}
       </div></div>`;
     // projection if staying put
@@ -208,6 +210,7 @@ function tripSheet(t){
     <label>Arrived<input type="date" id="f-arr" value="${t.arrive}"></label>
     <label class="row"><input type="checkbox" id="f-on" ${t.depart?'':'checked'}> I'm still here (ongoing)</label>
     <label id="f-dep-wrap" ${t.depart?'':'hidden'}>Departed<input type="date" id="f-dep" value="${t.depart||todayS()}"></label>
+    <label class="row" id="f-ext-wrap" ${(ruleFor(t.cc).visa||{}).ext?'':'hidden'}><input type="checkbox" id="f-ext" ${t.ext?'checked':''}> <span id="f-ext-txt">Visa extension obtained (+${(ruleFor(t.cc).visa||{}).ext||0}d)</span></label>
     <label>Note <span class="muted small">(optional)</span><input type="text" id="f-note" maxlength="60" value="${esc(t.note||'')}"></label>
     <div class="btnrow">
       <button class="btn primary" id="f-save">Save</button>
@@ -216,6 +219,7 @@ function tripSheet(t){
     </div>
     <div class="muted small">* = no researched rule card yet (generic 183-day caution applies)</div>`);
   $('#f-on').onchange=e=>{$('#f-dep-wrap').hidden=e.target.checked;};
+  $('#f-cc').onchange=e=>{const v=ruleFor(e.target.value).visa||{};$('#f-ext-wrap').hidden=!v.ext;$('#f-ext-txt').textContent=`Visa extension obtained (+${v.ext||0}d)`;};
   $('#f-cancel').onclick=closeSheet;
   if(!isNew)$('#f-del').onclick=()=>{state.trips=state.trips.filter(x=>x.id!==t.id);save();closeSheet();renderAll();toast('Trip deleted');};
   $('#f-save').onclick=()=>{
@@ -224,7 +228,7 @@ function tripSheet(t){
     if(dep&&dep<arr){toast('Departure is before arrival');return;}
     if(on){const other=state.trips.find(x=>!x.depart&&x.id!==t.id);
       if(other){other.depart=addDays(arr,0)<other.arrive?other.arrive:arr;toast(`Closed ongoing ${cname(other.cc)} trip`);} }
-    const obj={id:t.id,cc,arrive:arr,depart:dep,note:$('#f-note').value.trim()};
+    const obj={id:t.id,cc,arrive:arr,depart:dep,ext:!!($('#f-ext')&&$('#f-ext').checked&&(ruleFor(cc).visa||{}).ext),note:$('#f-note').value.trim()};
     const i=state.trips.findIndex(x=>x.id===t.id);
     if(i>=0)state.trips[i]=obj;else state.trips.push(obj);
     save();closeSheet();renderAll();toast('Saved');
@@ -233,6 +237,8 @@ function tripSheet(t){
 
 /* ---------------- COUNTRIES / RULES ---------------- */
 const STANCE={good:['\u{1F7E2}','Off-ramp friendly'],warn:['\u{1F7E1}','Conditional — plan carefully'],bad:['\u{1F534}','Danger zone']};
+const STANCE_SHORT={good:'friendly',warn:'careful',bad:'danger'};
+function legendHTML(){return `<div class="legend"><span><span class="dot g"></span>crypto off-ramp friendly</span><span><span class="dot y"></span>conditional — plan carefully</span><span><span class="dot r"></span>danger zone</span></div>`;}
 let openCC=null;
 
 function renderCountries(){
@@ -243,7 +249,7 @@ function renderCountries(){
     if(la!==lb)return la-lb;
     return cname(a).localeCompare(cname(b));
   });
-  let h=`<div class="muted small pad">Every card shows a “verified” date — after 6 months it flags itself STALE. Rules in this region change fast; a stale card is a to-do, not a fact.</div>`;
+  let h=legendHTML()+`<div class="muted small pad">The colored badge rates each country for liquidating crypto while tax-resident there. Every card shows a “verified” date — after 6 months it flags itself STALE; rules here change fast.</div>`;
   for(const cc of ccs){
     const r=RULES[cc];
     const st=STANCE[r.crypto.stance];
@@ -253,7 +259,7 @@ function renderCountries(){
     h+=`<div class="card country ${open?'open':''}" data-cc="${cc}">
       <div class="chead">
         <span class="tflag">${cflag(cc)}</span>
-        <span class="tbody"><b>${esc(cname(cc))}</b> <span title="${st[1]}">${st[0]}</span>${stale?' <span class="stale">STALE — re-verify</span>':''}<br>
+        <span class="tbody"><b>${esc(cname(cc))}</b> <span class="pill ${r.crypto.stance}">${st[0]} ${STANCE_SHORT[r.crypto.stance]}</span>${stale?' <span class="stale">STALE — re-verify</span>':''}<br>
           <span class="muted small">${esc(r.tax.label)}${y?` · ${y}d this yr`:''}</span></span>
         <span class="chev">${open?'▾':'›'}</span>
       </div>
@@ -274,6 +280,42 @@ function renderCountries(){
 }
 function openCountry(cc){openCC=cc;renderCountries();
   const el=document.querySelector(`.country[data-cc="${cc}"]`);if(el)el.scrollIntoView({behavior:'smooth',block:'start'});}
+
+/* ---------------- MAP ---------------- */
+function renderMap(){
+  const asOf=todayS();
+  let tiles='';
+  for(const [cc,c] of Object.entries(COUNTRIES)){
+    if(!c.m)continue;
+    const carded=hasCard(cc);
+    const y=ytd(cc,asOf), ro=roll365(cc,asOf);
+    const td=(carded||y||ro)?taxDays(cc,asOf):null;
+    const lv=td&&td.days>0?level(td.pct):null;
+    const st=carded?RULES[cc].crypto.stance:null;
+    tiles+=`<div class="tile ${st?'st-'+st:''} ${lv?'lv-'+lv:''} ${!carded?'dim':''}" style="grid-column:${c.m[0]+1};grid-row:${c.m[1]+1}" data-cc="${cc}">
+      <span class="tf">${c.f}</span><span class="tn">${cc}</span><span class="td ${lv&&lv!=='ok'?lv:''}">${td&&td.days>0?td.days+'/'+td.limit:'&nbsp;'}</span></div>`;
+  }
+  $('#view-map').innerHTML=legendHTML()+`<div class="mapwrap"><div class="maptiles">${tiles}</div></div>
+    <div class="muted small pad" style="margin-top:10px">Schematic map — tap a country for its snapshot. Tiles fill amber/red as tax-day clocks approach thresholds; dashed tiles have no researched rule card yet.</div>`;
+  document.querySelectorAll('.tile').forEach(el=>el.onclick=()=>mapSheet(el.dataset.cc));
+}
+function mapSheet(cc){
+  const r=ruleFor(cc), asOf=todayS(), st=STANCE[r.crypto.stance], td=taxDays(cc,asOf);
+  const cur=ongoingTrip(); const vs=cur&&cur.cc===cc?visaStat(cur,asOf):null;
+  openSheet(`
+    <h3>${cflag(cc)} ${esc(cname(cc))} <span class="pill ${r.crypto.stance}">${st[0]} ${STANCE_SHORT[r.crypto.stance]}</span></h3>
+    <div class="sect"><b>Crypto</b><p>${esc(r.crypto.head)}</p></div>
+    <div class="sect"><b>Tax residency</b><p>${esc(r.tax.label)}${td&&td.days>0?` — <b>${td.days}/${td.limit}d</b> used`:''}</p></div>
+    <div class="sect"><b>Visa</b><p>${esc(r.visa.label)}${vs?` — ${vs.left}d left on this entry`:''}</p></div>
+    <div class="btnrow">
+      ${hasCard(cc)?`<button class="btn primary" id="ms-card">Full rule card</button>`:''}
+      <button class="btn" id="ms-plan">Plan a stay</button>
+      <button class="btn" id="ms-close">Close</button>
+    </div>`);
+  $('#ms-close').onclick=closeSheet;
+  const b=$('#ms-card'); if(b)b.onclick=()=>{closeSheet();showView('countries');openCountry(cc);};
+  $('#ms-plan').onclick=()=>{closeSheet();planCC=cc;renderPlan._init=true;showView('plan');};
+}
 
 /* ---------------- PLAN ---------------- */
 let planCC='TH', planDate=addDays(todayS(),30);
@@ -326,14 +368,18 @@ function planOut(){
     h+=`<div class="good" style="margin-top:8px">\u{2705} ${esc(r.tax.label)} — no day-count tax trap here.</div>`;
   }
 
-  // visa check
+  // visa check (extension-aware)
   if(r.visa&&r.visa.days){
     const entryStart=already?cur.arrive:asOf;
     const entryDays=diffDays(entryStart,target)+1;
-    const lastLegal=addDays(entryStart,r.visa.days-1);
-    h+= entryDays>r.visa.days
-      ?`<div class="bad" style="margin-top:6px">\u{1F6C2} This single entry exceeds the ${r.visa.days}d visa limit on <b>${fmt(addDays(lastLegal,1))}</b> — extension, visa run or a proper visa needed. (${esc(r.visa.label)})</div>`
-      :`<div class="muted" style="margin-top:6px">\u{1F6C2} Visa OK for one entry: ${entryDays} of ${r.visa.days}d (${esc(r.visa.label)})</div>`;
+    const base=r.visa.days, vext=r.visa.ext||0, vmax=base+vext;
+    const baseEnd=addDays(entryStart,base-1), maxEnd=addDays(entryStart,vmax-1);
+    if(entryDays<=base)
+      h+=`<div class="muted" style="margin-top:6px">\u{1F6C2} Visa OK for one entry: ${entryDays} of ${base}d${vext?` (+${vext}d extension available)`:''} — ${esc(r.visa.label)}</div>`;
+    else if(entryDays<=vmax)
+      h+=`<div class="warn" style="margin-top:6px">\u{1F6C2} Doable WITH an in-country extension: the base ${base}d runs out ${fmt(baseEnd)} — apply before then for +${vext}d, covering you to ${fmt(maxEnd)}. ${esc(r.visa.label)}</div>`;
+    else
+      h+=`<div class="bad" style="margin-top:6px">\u{1F6C2} Exceeds even the extended ${vmax}d limit on <b>${fmt(addDays(maxEnd,1))}</b> — visa run or a proper visa needed. ${esc(r.visa.label)}</div>`;
   }
 
   // what does it do to OTHER clocks (rolling windows elsewhere are unaffected by presence here, but show top-2 running countries for context)
@@ -406,7 +452,7 @@ async function checkUpdates(){
 }
 
 /* ---------------- NAV ---------------- */
-const VIEWS=['today','trips','countries','plan'];
+const VIEWS=['today','trips','map','countries','plan'];
 let curView='today';
 function showView(v){
   curView=v;
@@ -423,6 +469,7 @@ $('#sheetBg').onclick=closeSheet;
 function renderAll(){
   if(curView==='today')renderToday();
   if(curView==='trips')renderTrips();
+  if(curView==='map')renderMap();
   if(curView==='countries')renderCountries();
   if(curView==='plan')renderPlan();
 }

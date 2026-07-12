@@ -89,3 +89,27 @@ h3{margin:0 0 12px}
   background:#e8edf7;color:#0b1220;padding:9px 16px;border-radius:12px;font-size:14px;font-weight:600;
   z-index:30;box-shadow:0 4px 16px rgba(0,0,0,.4);max-width:86vw}
 .foot{color:var(--muted);font-size:11.5px;text-align:center;margin:22px 0 4px}
+
+/* map (v2) */
+.mapwrap{overflow-x:auto;padding-bottom:4px}
+.maptiles{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;min-width:340px}
+.tile{border:2px solid var(--line);border-radius:12px;aspect-ratio:1;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:1px;cursor:pointer;background:var(--card);padding:2px;min-width:0}
+.tile .tf{font-size:19px;line-height:1.1}
+.tile .tn{font-size:9.5px;color:var(--muted);letter-spacing:.04em}
+.tile .td{font-size:9px;color:var(--muted);white-space:nowrap}
+.tile.st-good{border-color:rgba(81,216,138,.55)}
+.tile.st-warn{border-color:rgba(255,180,84,.5)}
+.tile.st-bad{border-color:rgba(255,107,107,.55)}
+.tile.lv-amber{background:rgba(255,180,84,.16)}
+.tile.lv-red,.tile.lv-over{background:rgba(255,107,107,.18)}
+.tile.dim{opacity:.5;border-style:dashed}
+
+/* stance pills + legend (v2) */
+.pill{font-size:11px;font-weight:700;padding:1px 8px;border-radius:9px;vertical-align:middle;white-space:nowrap}
+.pill.good{background:rgba(81,216,138,.14);color:var(--green)}
+.pill.warn{background:rgba(255,180,84,.14);color:var(--amber)}
+.pill.bad{background:rgba(255,107,107,.14);color:var(--red)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;color:var(--muted);font-size:12px;margin:2px 2px 10px}
+.legend .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}
+.dot.g{background:var(--green)}.dot.y{background:var(--amber)}.dot.r{background:var(--red)}
