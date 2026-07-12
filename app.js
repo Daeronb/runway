@@ -1,12 +1,16 @@
 'use strict';
-const APP_VERSION='v3';
+const APP_VERSION='v4';
 
 /* ---------------- state ---------------- */
 const LS='runway:v1';
 let state=load();
 function load(){
-  try{const s=JSON.parse(localStorage.getItem(LS));if(s&&Array.isArray(s.trips))return s;}catch(e){}
-  return {trips:[],settings:{nlDeparture:''}};
+  let s=null;
+  try{const j=JSON.parse(localStorage.getItem(LS));if(j&&Array.isArray(j.trips))s=j;}catch(e){}
+  s=s||{trips:[],settings:{nlDeparture:''}};
+  s.finance=Object.assign({bonds:0,yieldPct:3.2,cash:0,cryptoVal:0,cryptoBasis:0,floor:350000,colMode:'n',thRemit:20000,thLTR:false,jp2028:false,krRemit:false},s.finance||{});
+  s.fx=s.fx||null;
+  return s;
 }
 function save(){localStorage.setItem(LS,JSON.stringify(state));}
 
@@ -410,6 +414,151 @@ function planOut(){
   $('#p-out').innerHTML=h;
 }
 
+/* ---------------- MONEY (Navigator) ---------------- */
+const eur=n=>n==null?'—':'€'+Math.round(n).toLocaleString('en-GB');
+function fxRate(cur){
+  if(state.fx&&state.fx.rates&&state.fx.rates[cur])return state.fx.rates[cur];
+  return FX_FALLBACK.rates[cur]||1;
+}
+async function fetchFX(force){
+  const t=todayS();
+  if(!force&&state.fx&&state.fx.date===t)return;
+  try{
+    const r=await fetch('https://open.er-api.com/v6/latest/EUR');
+    const j=await r.json();
+    if(j&&j.rates){state.fx={date:t,rates:j.rates};save();if(curView==='money')renderMoney();if(force)toast('FX updated');}
+  }catch(e){if(force)toast('FX fetch failed — using '+(state.fx?state.fx.date:'built-in '+FX_FALLBACK.date)+' rates');}
+}
+function finNum(id){const v=parseFloat($(id).value);return isNaN(v)?0:v;}
+function gainNow(){const f=state.finance;return Math.max(0,(f.cryptoVal||0)-(f.cryptoBasis||0));}
+
+function offRampRows(){
+  const f=state.finance;
+  const gain=gainNow(), proceeds=f.cryptoVal||0;
+  const rows=[];
+  for(const [cc,m] of Object.entries(TAX_MODELS)){
+    let r;
+    try{r=m.calc({gain,proceeds,fx:fxRate,o:f});}catch(e){r={tax:null,notes:['model error']};}
+    rows.push({cc,tax:r.tax,eff:r.tax!=null&&gain>0?r.tax/gain:null,rough:!!r.rough,notes:r.notes||[]});
+  }
+  rows.sort((a,b)=>(a.tax==null?1e15:a.tax)-(b.tax==null?1e15:b.tax));
+  return rows;
+}
+function runwayRows(){
+  const f=state.finance;
+  const capital=(f.bonds||0)+(f.cash||0);
+  const yieldMo=(f.bonds||0)*(f.yieldPct||0)/100/12;
+  const rows=[];
+  for(const [cc,c] of Object.entries(COL)){
+    const burn=f.colMode==='f'?c.f:c.n;
+    const net=burn-yieldMo;
+    const months=net<=0?Infinity:Math.max(0,(capital-(f.floor||0))/net);
+    rows.push({cc,burn,net,months,city:c.c});
+  }
+  rows.sort((a,b)=>b.months-a.months);
+  return {rows,capital,yieldMo};
+}
+
+function renderMoney(){
+  const f=state.finance;
+  const gain=gainNow();
+  let h='';
+
+  // portfolio
+  h+=`<div class="card"><h3 style="margin-top:0">\u{1F4BC} Portfolio</h3>
+    <div class="fingrid">
+      <label>Bonds €<input type="number" inputmode="decimal" id="fi-bonds" value="${f.bonds||''}" placeholder="300000"></label>
+      <label>Avg yield %/yr<input type="number" inputmode="decimal" step="0.1" id="fi-yield" value="${f.yieldPct||''}" placeholder="3.2"></label>
+      <label>Cash €<input type="number" inputmode="decimal" id="fi-cash" value="${f.cash||''}" placeholder="30000"></label>
+      <label>Crypto now €<input type="number" inputmode="decimal" id="fi-cval" value="${f.cryptoVal||''}" placeholder="75000"></label>
+      <label>Crypto cost basis €<input type="number" inputmode="decimal" id="fi-cbasis" value="${f.cryptoBasis||''}" placeholder="25000"></label>
+      <label>Capital floor €<input type="number" inputmode="decimal" id="fi-floor" value="${f.floor||''}" placeholder="350000"></label>
+    </div>
+    <div class="muted small">Saved on-device as you type. Yield income ≈ <b>${eur((f.bonds||0)*(f.yieldPct||0)/100/12)}/mo</b> gross · unrealised crypto gain ≈ <b>${eur(gain)}</b>.</div>
+  </div>`;
+
+  // off-ramp comparison
+  h+=`<h2>Off-ramp simulator</h2>`;
+  if(!f.cryptoVal){
+    h+=`<div class="card note">Enter your crypto value (and cost basis) above to compare estimated liquidation tax across countries.</div>`;
+  } else {
+    const rows=offRampRows();
+    h+=`<div class="card"><div class="muted small" style="margin-bottom:8px">Estimated tax if you sell the full <b>${eur(f.cryptoVal)}</b> (gain ${eur(gain)}) while <b>tax-resident</b> there. Assumes investor profile, no other local income. Tap a row for the reasoning + toggles. ~ = rough model.</div>
+    ${rows.map(r=>{const nm=TAX_MODELS[r.cc].n;return `<div class="frow" data-cc="${r.cc}">
+      <span class="tflag">${cflag(r.cc)}</span>
+      <span class="tbody"><b>${esc(nm)}</b></span>
+      <span class="famt ${r.tax===0?'good':r.tax==null?'muted':r.eff>0.3?'bad':r.eff>0.1?'warn':''}">${r.tax==null?'n/a':(r.rough?'~':'')+eur(r.tax)}${r.eff!=null&&r.tax>0?` <span class="muted small">(${Math.round(r.eff*100)}%)</span>`:''}</span>
+      <span class="chev">›</span></div>`;}).join('')}
+    </div>`;
+  }
+
+  // runway
+  h+=`<h2>Runway to the floor</h2>`;
+  const {rows:rw,capital,yieldMo}=runwayRows();
+  if(!capital){
+    h+=`<div class="card note">Enter bonds/cash above to see how long each country lets you live off yield before touching the ${eur(f.floor)} floor.</div>`;
+  } else {
+    h+=`<div class="card">
+      <div class="btnrow" style="margin:0 0 10px">
+        <button class="btn chip ${f.colMode==='f'?'primary':''}" id="fi-frugal">Frugal</button>
+        <button class="btn chip ${f.colMode==='n'?'primary':''}" id="fi-normal">Normal</button>
+      </div>
+      <div class="muted small" style="margin-bottom:8px">Liquid capital ${eur(capital)} (bonds+cash, crypto excluded) · yield ${eur(yieldMo)}/mo · floor ${eur(f.floor)}. Cost of living incl. ~€150–250 health/travel insurance, verified ${fmt(MONEY_VERIFIED)}.</div>
+      ${rw.map(r=>`<div class="frow frow-run">
+        <span class="tflag">${cflag(r.cc)}</span>
+        <span class="tbody"><b>${esc(cname(r.cc))}</b><br><span class="muted small">${esc(r.city)} · ${eur(r.burn)}/mo</span></span>
+        <span class="famt ${r.months===Infinity?'good':r.months<24?'bad':r.months<48?'warn':''}">${r.months===Infinity?'∞ covered':Math.round(r.months)+' mo'}</span>
+      </div>`).join('')}
+      <div class="muted small" style="margin-top:8px">∞ = yield alone covers the burn; capital never drops. Months = time until liquid capital hits the floor at that burn.</div>
+    </div>`;
+  }
+
+  // fx footer
+  const fxd=state.fx?state.fx.date:FX_FALLBACK.date+' (built-in)';
+  h+=`<div class="card"><div class="muted small">1 € = ${FX_SHOW.map(c=>`${Math.round(fxRate(c)).toLocaleString()} ${c}`).join(' · ')}<br>Rates: ${fxd} · <a href="#" id="fi-fx">refresh</a></div></div>`;
+  h+=`<div class="foot">Rough planning models — not tax or financial advice. Verify with a professional before acting.</div>`;
+
+  $('#view-money').innerHTML=h;
+
+  const bind=(id,key)=>{const el=$(id);if(el)el.oninput=()=>{state.finance[key]=finNum(id);save();};el.onchange=()=>{renderMoney();};};
+  bind('#fi-bonds','bonds');bind('#fi-yield','yieldPct');bind('#fi-cash','cash');
+  bind('#fi-cval','cryptoVal');bind('#fi-cbasis','cryptoBasis');bind('#fi-floor','floor');
+  const fr=$('#fi-frugal'),no=$('#fi-normal');
+  if(fr)fr.onclick=()=>{state.finance.colMode='f';save();renderMoney();};
+  if(no)no.onclick=()=>{state.finance.colMode='n';save();renderMoney();};
+  document.querySelectorAll('.frow[data-cc]').forEach(el=>el.onclick=()=>offRampSheet(el.dataset.cc));
+  const fx=$('#fi-fx');if(fx)fx.onclick=e=>{e.preventDefault();fetchFX(true);};
+  fetchFX(false);
+}
+
+function offRampSheet(cc){
+  const f=state.finance, m=TAX_MODELS[cc];
+  const gain=gainNow();
+  let r;try{r=m.calc({gain,proceeds:f.cryptoVal||0,fx:fxRate,o:f});}catch(e){r={tax:null,notes:[]};}
+  let toggles='';
+  if(cc==='TH')toggles=`
+    <label>Remitted into Thailand €/yr<input type="number" inputmode="decimal" id="ff-threm" value="${f.thRemit||0}"></label>
+    <label class="row"><input type="checkbox" id="ff-thltr" ${f.thLTR?'checked':''}> I hold an LTR visa (remittance exemption)</label>`;
+  if(cc==='JP')toggles=`<label class="row"><input type="checkbox" id="ff-jp28" ${f.jp2028?'checked':''}> Assume 2028 reform passed + FSA-listed asset (20.315%)</label>`;
+  if(cc==='KR')toggles=`<label class="row"><input type="checkbox" id="ff-krrem" ${f.krRemit?'checked':''}> Proceeds remitted into Korea</label>`;
+  openSheet(`
+    <h3>${cflag(cc)} ${esc(m.n)} off-ramp</h3>
+    <div class="sect"><b>Estimated tax: ${r.tax==null?'n/a':(r.rough?'~':'')+eur(r.tax)}</b>${r.tax>0&&gain>0?` <span class="muted">(${Math.round(r.tax/gain*100)}% of gain)</span>`:''}</div>
+    ${toggles}
+    ${(r.notes||[]).map(n=>`<div class="sect"><p>• ${esc(n)}</p></div>`).join('')}
+    <div class="muted small">Model assumes tax residency there, investor profile, no other local income. Verified ${fmt(MONEY_VERIFIED)}.</div>
+    <div class="btnrow">
+      ${RULES[cc]?`<button class="btn" id="ff-card">Rule card</button>`:''}
+      <button class="btn primary" id="ff-close">Close</button>
+    </div>`);
+  $('#ff-close').onclick=()=>{closeSheet();renderMoney();};
+  const cb=$('#ff-card');if(cb)cb.onclick=()=>{closeSheet();showView('countries');openCountry(cc);};
+  const tr=$('#ff-threm');if(tr)tr.onchange=()=>{state.finance.thRemit=finNum('#ff-threm');save();offRampSheet(cc);};
+  const tl=$('#ff-thltr');if(tl)tl.onchange=()=>{state.finance.thLTR=tl.checked;save();offRampSheet(cc);};
+  const j8=$('#ff-jp28');if(j8)j8.onchange=()=>{state.finance.jp2028=j8.checked;save();offRampSheet(cc);};
+  const kr=$('#ff-krrem');if(kr)kr.onchange=()=>{state.finance.krRemit=kr.checked;save();offRampSheet(cc);};
+}
+
 /* ---------------- SHEET / MENU ---------------- */
 function openSheet(html){$('#sheet').innerHTML=html;$('#sheetWrap').hidden=false;}
 function closeSheet(){$('#sheetWrap').hidden=true;}
@@ -460,7 +609,7 @@ async function checkUpdates(){
     const m=(await r.text()).match(/APP_VERSION='([^']+)'/);
     if(m&&m[1]!==APP_VERSION){
       toast('Updating to '+m[1]+'…');
-      for(const f of ['./','./index.html','./app.css','./app.js','./rules.js'])
+      for(const f of ['./','./index.html','./app.css','./app.js','./rules.js','./money.js'])
         try{await fetch(f,{cache:'reload'});}catch(_){}
       const reg=await navigator.serviceWorker?.getRegistration();
       if(reg)await reg.update();
@@ -470,7 +619,7 @@ async function checkUpdates(){
 }
 
 /* ---------------- NAV ---------------- */
-const VIEWS=['today','trips','map','countries','plan'];
+const VIEWS=['today','trips','map','countries','plan','money'];
 let curView='today';
 function showView(v){
   curView=v;
@@ -490,6 +639,7 @@ function renderAll(){
   if(curView==='map')renderMap();
   if(curView==='countries')renderCountries();
   if(curView==='plan')renderPlan();
+  if(curView==='money')renderMoney();
 }
 
 /* ---------------- boot ---------------- */

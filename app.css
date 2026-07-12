@@ -131,3 +131,15 @@ h3{margin:0 0 12px}
   font-size:10px;font-weight:900;color:#071018}
 .dot.g{background:#35d0ba}.dot.y{background:#ffc14d}.dot.r{background:#ff5c7a}
 .dot.n{background:none;border:1.5px dashed var(--muted);width:12px;height:12px}
+
+/* v4: Money / Navigator */
+.fingrid{display:grid;grid-template-columns:1fr 1fr;gap:8px 10px;margin-bottom:10px}
+.fingrid label{font-size:12.5px;color:var(--muted)}
+.fingrid input{display:block;width:100%;margin-top:3px;padding:9px;border-radius:10px;border:1px solid var(--line);
+  background:var(--bg);color:var(--text);font-size:15px}
+.frow{display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid var(--line);cursor:pointer}
+.frow:last-of-type{border-bottom:none}
+.frow-run{cursor:default}
+.famt{font-weight:700;white-space:nowrap}
+#view-money a{color:var(--accent2)}
+#tabbar button{padding:4px 8px}
