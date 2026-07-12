@@ -113,3 +113,21 @@ h3{margin:0 0 12px}
 .legend{display:flex;gap:14px;flex-wrap:wrap;color:var(--muted);font-size:12px;margin:2px 2px 10px}
 .legend .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}
 .dot.g{background:var(--green)}.dot.y{background:var(--amber)}.dot.r{background:var(--red)}
+
+/* v3: colorblind-friendly map */
+.tile{position:relative;border-width:3px}
+.tile.st-good{border-color:rgba(53,208,186,.9)}
+.tile.st-warn{border-color:rgba(255,193,77,.85)}
+.tile.st-bad{border-color:rgba(255,92,122,.9)}
+.tile.lv-amber{background:rgba(255,193,77,.24)}
+.tile.lv-red,.tile.lv-over{background:rgba(255,92,122,.26)}
+.stbadge{position:absolute;top:-8px;right:-6px;width:17px;height:17px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;
+  color:#071018;border:1.5px solid var(--bg)}
+.sb-good{background:#35d0ba}.sb-warn{background:#ffc14d}.sb-bad{background:#ff5c7a}
+.tile.noflag .tn{font-size:14px;font-weight:800;color:var(--text);letter-spacing:.02em}
+.tile.noflag{gap:3px}
+.legend .dot{width:15px;height:15px;display:inline-flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:900;color:#071018}
+.dot.g{background:#35d0ba}.dot.y{background:#ffc14d}.dot.r{background:#ff5c7a}
+.dot.n{background:none;border:1.5px dashed var(--muted);width:12px;height:12px}

@@ -1,5 +1,5 @@
 'use strict';
-const APP_VERSION='v2';
+const APP_VERSION='v3';
 
 /* ---------------- state ---------------- */
 const LS='runway:v1';
@@ -238,7 +238,22 @@ function tripSheet(t){
 /* ---------------- COUNTRIES / RULES ---------------- */
 const STANCE={good:['\u{1F7E2}','Off-ramp friendly'],warn:['\u{1F7E1}','Conditional — plan carefully'],bad:['\u{1F534}','Danger zone']};
 const STANCE_SHORT={good:'friendly',warn:'careful',bad:'danger'};
-function legendHTML(){return `<div class="legend"><span><span class="dot g"></span>crypto off-ramp friendly</span><span><span class="dot y"></span>conditional — plan carefully</span><span><span class="dot r"></span>danger zone</span></div>`;}
+const STANCE_GLYPH={good:'✓',warn:'!',bad:'✕'};
+function legendHTML(){return `<div class="legend"><span><span class="dot g">✓</span>crypto off-ramp friendly</span><span><span class="dot y">!</span>conditional — plan carefully</span><span><span class="dot r">✕</span>danger zone</span><span><span class="dot n"></span>no rule card yet</span></div>`;}
+let _flagOK=null;
+function flagsSupported(){
+  if(_flagOK!==null)return _flagOK;
+  try{
+    const c=document.createElement('canvas');c.width=c.height=20;
+    const x=c.getContext('2d');x.font='16px sans-serif';x.fillText('\u{1F1F9}\u{1F1ED}',0,16);
+    const d=x.getImageData(0,0,20,20).data;
+    _flagOK=false;
+    for(let i=0;i<d.length;i+=4){
+      if(d[i+3]>0&&(Math.abs(d[i]-d[i+1])>16||Math.abs(d[i+1]-d[i+2])>16)){_flagOK=true;break;}
+    }
+  }catch(e){_flagOK=true;}
+  return _flagOK;
+}
 let openCC=null;
 
 function renderCountries(){
@@ -292,8 +307,11 @@ function renderMap(){
     const td=(carded||y||ro)?taxDays(cc,asOf):null;
     const lv=td&&td.days>0?level(td.pct):null;
     const st=carded?RULES[cc].crypto.stance:null;
-    tiles+=`<div class="tile ${st?'st-'+st:''} ${lv?'lv-'+lv:''} ${!carded?'dim':''}" style="grid-column:${c.m[0]+1};grid-row:${c.m[1]+1}" data-cc="${cc}">
-      <span class="tf">${c.f}</span><span class="tn">${cc}</span><span class="td ${lv&&lv!=='ok'?lv:''}">${td&&td.days>0?td.days+'/'+td.limit:'&nbsp;'}</span></div>`;
+    const showFlag=flagsSupported();
+    const warnGlyph=lv==='amber'?'⚠ ':(lv==='red'||lv==='over')?'✕ ':'';
+    tiles+=`<div class="tile ${st?'st-'+st:''} ${lv?'lv-'+lv:''} ${!carded?'dim':''} ${showFlag?'':'noflag'}" style="grid-column:${c.m[0]+1};grid-row:${c.m[1]+1}" data-cc="${cc}">
+      ${st?`<span class="stbadge sb-${st}">${STANCE_GLYPH[st]}</span>`:''}
+      ${showFlag?`<span class="tf">${c.f}</span>`:''}<span class="tn">${cc}</span><span class="td ${lv&&lv!=='ok'?lv:''}">${td&&td.days>0?warnGlyph+td.days+'/'+td.limit:'&nbsp;'}</span></div>`;
   }
   $('#view-map').innerHTML=legendHTML()+`<div class="mapwrap"><div class="maptiles">${tiles}</div></div>
     <div class="muted small pad" style="margin-top:10px">Schematic map — tap a country for its snapshot. Tiles fill amber/red as tax-day clocks approach thresholds; dashed tiles have no researched rule card yet.</div>`;
