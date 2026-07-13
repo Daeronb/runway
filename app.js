@@ -1,5 +1,5 @@
 'use strict';
-const APP_VERSION='v7';
+const APP_VERSION='v9';
 
 /* ---------------- state ---------------- */
 const LS='runway:v1';
@@ -286,6 +286,7 @@ function renderCountries(){
         <div class="sect"><b>${st[0]} Crypto: ${esc(r.crypto.head)}</b><p>${esc(r.crypto.body)}</p></div>
         <div class="sect"><b>\u{1F4C6} Tax residency</b><p>${esc(r.tax.note)}</p></div>
         <div class="sect"><b>\u{1F6C2} Visa (NL passport): ${esc(r.visa.label)}</b><p>${esc(r.visa.note)}</p></div>
+        ${r.trading?`<div class="sect"><b>${STANCE[r.trading.stance][0]} Day-trading ${STANCE_GLYPH[r.trading.stance]} ${esc(r.trading.head)}</b><p>${esc(r.trading.body)}</p></div>`:''}
         ${r.routes?`<div class="sect"><b>\u{1F5FA} Route</b><p>${esc(r.routes)}</p></div>`:''}
         <div class="muted small">Verified ${fmt(r.verified)}${stale?' — STALE':''}</div>
         ${r.sources.length?`<div class="srcs">${r.sources.map(s=>`<a href="${s[1]}" target="_blank" rel="noopener">${esc(s[0])} ↗</a>`).join('')}</div>`:''}
@@ -313,6 +314,79 @@ function renderLearn(){
   document.querySelectorAll('#view-learn .strat').forEach(el=>{
     el.querySelector('.shead').onclick=()=>{openStrat=openStrat===el.dataset.strat?null:el.dataset.strat;renderLearn();};
   });
+}
+
+/* ---------------- LENS (ranking perspectives) ---------------- */
+let lensAxis='trading';
+const WINLBL={cal:'calendar yr',roll:'rolling 365',both:'cal or 365'};
+const LENSES=[
+  {id:'trading',icon:'⚡',label:'Day-trading',blurb:'Ranked best-first — where frequent, app-based trading stays untaxed. Colour shows the tax consequence if you trade actively here.'},
+  {id:'offramp',icon:'\u{1F4B0}',label:'Off-ramp tax',blurb:'Ranked cheapest-first — tax to cash out your crypto gain while tax-resident there.'},
+  {id:'residency',icon:'⏳',label:'Residency trip-wire',blurb:'Ranked most-forgiving-first — days you can stay before you become a tax resident. Colour shows whether becoming resident actually costs you (green = foreign crypto still safe).'},
+  {id:'col',icon:'\u{1F3E0}',label:'Cost of living',blurb:'Ranked cheapest-first — estimated monthly burn for one person, incl. insurance.'},
+  {id:'visa',icon:'\u{1F6C2}',label:'Visa runway',blurb:'Ranked longest-first — visa-free days on a Dutch passport.'}
+];
+function lensRows(axis){
+  const f=state.finance;
+  if(axis==='trading'){
+    const ord={good:0,warn:1,bad:2};
+    return Object.keys(RULES).map(cc=>{const t=RULES[cc].trading;return {cc,sortVal:ord[t.stance],stance:t.stance,valTxt:STANCE_SHORT[t.stance],reason:t.head};})
+      .sort((a,b)=>a.sortVal-b.sortVal||cname(a.cc).localeCompare(cname(b.cc)));
+  }
+  if(axis==='offramp'){
+    const gain=gainNow()||50000, proceeds=f.cryptoVal||gain;
+    return Object.keys(TAX_MODELS).map(cc=>{
+      const m=TAX_MODELS[cc];let r;try{r=m.calc({gain,proceeds,fx:fxRate,o:f});}catch(e){r={tax:null};}
+      const tax=r.tax, eff=tax!=null&&gain>0?tax/gain:null;
+      const stance=tax==null?'warn':(eff<=0.001?'good':(eff<0.15?'warn':'bad'));
+      const valTxt=tax==null?'no lawful route':'€'+Math.round(tax).toLocaleString()+(eff!=null?' · '+Math.round(eff*100)+'%':'');
+      return {cc,sortVal:tax==null?1e15:tax,stance,valTxt,reason:m.n+(eff!=null?' — '+(eff*100).toFixed(1)+'% effective':' — no quantifiable rate')};
+    }).sort((a,b)=>a.sortVal-b.sortVal);
+  }
+  if(axis==='residency'){
+    return Object.keys(RULES).map(cc=>{
+      const r=RULES[cc], days=r.tax.days, win=r.tax.window, stance=r.crypto.stance;
+      let sortVal,valTxt;
+      if(days!=null){sortVal=days;valTxt=days+'d'+(win?' ('+WINLBL[win]+')':'');}
+      else if(stance==='good'){sortVal=9999;valTxt='no day trap';}
+      else{sortVal=1;valTxt='facts & circumstances';}
+      return {cc,sortVal,stance,valTxt,reason:r.tax.label};
+    }).sort((a,b)=>b.sortVal-a.sortVal||cname(a.cc).localeCompare(cname(b.cc)));
+  }
+  if(axis==='col'){
+    const mode=f.colMode||'n';
+    return Object.keys(COL).map(cc=>{const c=COL[cc], v=c[mode];
+      const stance=v<=1200?'good':(v<=2000?'warn':'bad');
+      return {cc,sortVal:v,stance,valTxt:'€'+v.toLocaleString()+'/mo',reason:c.c};
+    }).sort((a,b)=>a.sortVal-b.sortVal);
+  }
+  if(axis==='visa'){
+    return Object.keys(RULES).map(cc=>{const v=RULES[cc].visa, days=v.days, ext=v.ext||0;
+      let sortVal,valTxt,stance,x=ext;
+      if(days==null){sortVal=-1;x=-1;valTxt='home';stance='warn';}
+      else{const tot=days+ext;sortVal=days;stance=tot>=180?'good':(tot>=60?'warn':'bad');valTxt=days+'d'+(ext?' +'+ext+'ext':'')+' visa-free';}
+      return {cc,sortVal,x,stance,valTxt,reason:v.label};
+    }).sort((a,b)=>b.sortVal-a.sortVal||b.x-a.x);
+  }
+  return [];
+}
+function renderLens(){
+  const lz=LENSES.find(l=>l.id===lensAxis)||LENSES[0];
+  let h='<div class="lenschips">'+LENSES.map(l=>`<button class="btn chip ${l.id===lensAxis?'primary':''}" data-axis="${l.id}">${l.icon} ${esc(l.label)}</button>`).join('')+'</div>';
+  h+=`<div class="muted small pad">${esc(lz.blurb)}</div>`;
+  if(lensAxis==='offramp'&&gainNow()<=0)h+=`<div class="muted small pad">No crypto gain entered yet — ranking uses an example €50,000 gain. Set yours in the Money tab.</div>`;
+  const rows=lensRows(lensAxis);
+  h+='<div class="lenslist">';
+  rows.forEach((r,i)=>{h+=`<div class="lensrow" data-cc="${r.cc}">
+      <span class="lrank">${i+1}</span>
+      <span class="lflag">${cflag(r.cc)}</span>
+      <span class="lbody"><b>${esc(cname(r.cc))}</b><br><span class="muted small">${esc(r.reason)}</span></span>
+      <span class="pill ${r.stance}">${STANCE_GLYPH[r.stance]} ${esc(r.valTxt)}</span>
+    </div>`;});
+  h+='</div><div class="muted small pad">Tap a country to open its full rule card. Rankings are planning heuristics, not advice.</div>';
+  $('#view-lens').innerHTML=h;
+  document.querySelectorAll('#view-lens .chip').forEach(b=>b.onclick=()=>{lensAxis=b.dataset.axis;renderLens();});
+  document.querySelectorAll('#view-lens .lensrow').forEach(el=>el.onclick=()=>{showView('countries');openCountry(el.dataset.cc);});
 }
 
 /* ---------------- MAP ---------------- */
@@ -639,7 +713,7 @@ async function checkUpdates(){
 }
 
 /* ---------------- NAV ---------------- */
-const VIEWS=['today','trips','map','countries','plan','money'];
+const VIEWS=[...document.querySelectorAll('#tabbar button')].map(b=>b.dataset.view);
 let curView='today';
 function showView(v){
   curView=v;
@@ -661,6 +735,7 @@ function renderAll(){
   if(curView==='plan')renderPlan();
   if(curView==='money')renderMoney();
   if(curView==='learn')renderLearn();
+  if(curView==='lens')renderLens();
 }
 
 /* ---------------- boot ---------------- */

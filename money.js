@@ -28,6 +28,7 @@ const COL={
   AE:{f:2500,n:3900,c:'Dubai'},
   IN:{f:700, n:1300,c:'Goa (Bengaluru ≈ similar)'},
   PY:{f:950, n:1500,c:'Asunción'},
+  GE:{f:1050,n:1600,c:'Tbilisi'},
   UY:{f:1600,n:2300,c:'Montevideo'},
   AR:{f:1300,n:2000,c:'Buenos Aires (peso-volatile)'},
   NL:{f:1900,n:2700,c:'non-Randstad (return reference)'}
@@ -86,6 +87,7 @@ const TAX_MODELS={
   CN:{n:'China',calc:()=>({tax:null,notes:['Trading banned — no lawful off-ramp.']})},
   IN:{n:'India',calc:({gain})=>({tax:gain*.30,notes:['Flat 30% on crypto (VDA) gains — plus 4% cess & surcharge, so ~34% effective. NO holding-period relief, NO loss offset.','A separate 1% TDS is withheld on every transfer.','Only applies if you are India tax-resident (≥182 days). One of the harshest regimes — do not off-ramp here.'],rough:true})},
   PY:{n:'Paraguay',calc:()=>({tax:0,notes:['Territorial: crypto sold on foreign exchanges is foreign-source → 0% tax.','Report crypto activity over ~US$5k/yr (Resolution 47/2026) — but the rate stays 0%.','No 183-day trap; residency via cédula + RUC.']})},
+  GE:{n:'Georgia',calc:()=>({tax:0,notes:['Individual crypto disposals are deemed non-Georgian-source → 0% personal income tax, any amount.','No wealth, inheritance or gift tax.','Run trading as a registered business instead → Small-Business status (1% of turnover up to 500k GEL).']})},
   UY:{n:'Uruguay',calc:({gain,o})=>{
     if(o.uyHoliday)return {tax:0,notes:['New-resident tax holiday elected: foreign crypto gains exempt for ~11 years.','Requires 183+ days AND a qualifying investment (~US$2M property or US$100k/yr fund).']};
     return {tax:gain*.12,notes:['Standard resident: foreign-source capital gains (crypto) taxed at a flat 12% IRPF since 2026.','Toggle the holiday if you elect the new-resident exemption instead.'],rough:true};

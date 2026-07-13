@@ -1,4 +1,4 @@
-const CACHE = 'runway-v7';
+const CACHE = 'runway-v9';
 const SHELL = ['./', './index.html', './app.css', './app.js', './rules.js', './money.js', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', e => {

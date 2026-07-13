@@ -34,6 +34,7 @@ const GENERIC_RULE = {
   tax:{days:183,window:'both',label:'~183 days (generic caution)',
     note:'No researched rule card for this country yet — Runway applies the generic 183-day caution used by most tax systems. Verify locally before long stays.'},
   crypto:{stance:'warn',head:'Unresearched',body:'No rule card yet. Treat as unknown: fine to travel, do not off-ramp or hit residency thresholds here without doing the homework first.'},
+  trading:{stance:'warn',head:'Unresearched',body:'No trading rule card yet — assume gains could be taxed as income until you verify locally.'},
   visa:{days:null,label:'Check before travel',note:'Visa rules not loaded for this country.'},
   verified:RULES_BUILT, sources:[]
 };
@@ -122,6 +123,7 @@ const STRATEGY=[
 const RULES = {
 
 IN: {
+  trading:{stance:'bad',head:'Worst case for active trading',body:'The flat 30% VDA tax hits every gain and a 1% TDS fires on every single trade, with no loss offset — churning bleeds fast. Avoid entirely while resident.'},
   tax:{days:182,window:'cal',label:'≥182 days / year → worldwide income taxed',
     note:'182 days in a tax year (1 Apr–31 Mar) makes you a resident, and residents are taxed on WORLDWIDE income. The new Income-Tax Act 2025 (in force 1 Apr 2026) keeps 182 days as the core test; a 120-day trigger only bites people with over ₹15 lakh of India-source income. Stay under 182 days = non-resident, only India-source income taxed. Returning NRIs get an RNOR grace that shields foreign income for up to ~3 years.'},
   crypto:{stance:'bad',head:'Brutal — flat 30% + 1% TDS, no loss offset',
@@ -133,6 +135,7 @@ IN: {
 },
 
 PY: {
+  trading:{stance:'good',head:'0% on foreign-exchange trades',body:'Trades on foreign exchanges are foreign-source and untaxed no matter how often you trade. Only Paraguay-source activity is taxed.'},
   tax:{days:null,window:null,label:'Territorial — no day-count trap',
     note:'Paraguay taxes only Paraguay-source income. There is NO 183-day residency test: tax residency comes from holding legal residency + a cédula (national ID) + an active RUC (tax number). Foreign-source income — including foreign crypto — sits outside the tax base entirely.'},
   crypto:{stance:'good',head:'0% on foreign-source crypto',
@@ -143,6 +146,7 @@ PY: {
 },
 
 UY: {
+  trading:{stance:'warn',head:'12% on gains (0% under the holiday)',body:'A standard resident pays 12% IRPF on each realised gain, trading included. The elected new-resident holiday exempts it, but demands big presence plus a sizeable investment.'},
   tax:{days:183,window:'cal',label:'≥183 days / year — foreign income 12%, or elect a holiday',
     note:'183 days (or a centre-of-economic-interest test) makes you resident. Since 1 Jan 2026 (Law 20.446) foreign-source investment income & capital gains — crypto included — are taxed at a flat 12%. New residents may instead ELECT a tax holiday: foreign income exempt for the arrival year plus 10 more (~11 years), then 6% for 5 years. The holiday needs 183+ days AND a qualifying investment (~US$2M real estate or US$100k/yr innovation fund). People who elected before 2026 are grandfathered on the old terms.'},
   crypto:{stance:'warn',head:'12% flat — or 0% under the elected holiday',
@@ -153,6 +157,7 @@ UY: {
 },
 
 AR: {
+  trading:{stance:'bad',head:'Taxed hard, plus a wealth tax',body:'Trading gains are ordinary income up to 35% (15% if capital), and the coins are hit yearly by the Bienes Personales wealth tax. Currency controls make it worse.'},
   tax:{days:183,window:'cal',label:'Worldwide income; 12 months’ stay = resident',
     note:'Residents are taxed on WORLDWIDE income. Foreigners acquire tax residency after 12 continuous months of authorised stay. On top of income tax sits Bienes Personales — a wealth tax on worldwide assets (crypto included) at 0.5–1.75%, scheduled to ease toward 0.25% by 2027. Strict BCRA currency controls (the parallel “blue” dollar, restricted access to official FX) make moving money in and out awkward.'},
   crypto:{stance:'bad',head:'Worldwide tax PLUS a wealth tax on the coins',
@@ -163,6 +168,7 @@ AR: {
 },
 
 TH: {
+  trading:{stance:'warn',head:'Untaxed if offshore and unremitted',body:'Trade on foreign exchanges and keep the proceeds offshore during residency years → nothing to tax. Trading on Thai exchanges is Thai-source income — avoid.'},
   tax:{days:180,window:'cal',label:'≥180 days / calendar year',
     note:'Aggregate days 1 Jan–31 Dec; arrival and departure days both count. At 180 you are a Thai tax resident for that year — automatically, no registration needed.'},
   crypto:{stance:'warn',head:'Remittance-based — timing is everything',
@@ -175,6 +181,7 @@ TH: {
 },
 
 MY: {
+  trading:{stance:'warn',head:'Occasional fine; frequency is watched',body:'No CGT means casual trading is untaxed, but business-like high-frequency trading can be reassessed as income (0–30%) under badges-of-trade. App-based occasional trading like yours stays clear.'},
   tax:{days:182,window:'cal',label:'≥182 days / calendar year',
     note:'182 days in a basis (calendar) year makes you resident — which in Malaysia is mostly GOOD for you: resident status unlocks the territorial treatment and treaty access.'},
   crypto:{stance:'good',head:'No CGT for individuals — the friendly base',
@@ -186,6 +193,7 @@ MY: {
 },
 
 JP: {
+  trading:{stance:'bad',head:'Up to ~55% until the reform lands',body:'Trading gains are miscellaneous income taxed progressively to ~55%. The planned flat 20% reaches only FSA-listed assets on JP exchanges (~2028). Never trade here as a resident.'},
   tax:{days:183,window:'roll',label:'No fixed day-count — 183d rolling used as PROXY',
     note:'Japan has no simple day test: residency follows ‘jusho’ (centre of life) or one continuous year of residence. Runway tracks a 183-day rolling proxy — long stays plus ties (lease, gym, girlfriend, furniture) are what actually flip you. N4 and love of the place = exactly how people drift into residency by accident.'},
   crypto:{stance:'bad',head:'DANGER — up to ~55% until the reform lands',
@@ -198,6 +206,7 @@ JP: {
 },
 
 VN: {
+  trading:{stance:'warn',head:'0.1% per sale — adds up if you churn',body:'Each disposal is taxed 0.1% of gross proceeds: trivial for a big infrequent sell, but paid on every sale regardless of profit, so heavy churning is a slow drag.'},
   tax:{days:183,window:'both',label:'≥183 days / calendar year OR any 12 months',
     note:'Resident if ≥183 days in the calendar year OR in 12 consecutive months from first arrival — whichever hits first. A registered residence or a lease ≥183 days can also trigger it.'},
   crypto:{stance:'warn',head:'New regime: 0.1% on gross proceeds',
@@ -209,6 +218,7 @@ VN: {
 },
 
 ID: {
+  trading:{stance:'bad',head:'Worldwide income + exchange levies',body:'Residents are taxed on worldwide income and local-exchange trades carry small final levies. Not a trading base.'},
   tax:{days:183,window:'roll',label:'>183 days in any 12-month period',
     note:'Resident if present >183 days in any 12-month period, or present with intent to reside (KITAS + lease can signal intent earlier).'},
   crypto:{stance:'warn',head:'Worldwide income once resident; exchange levies',
@@ -220,6 +230,7 @@ ID: {
 },
 
 PH: {
+  trading:{stance:'good',head:'Foreign-exchange trades untaxed for aliens',body:'Trades on foreign exchanges are foreign-source and untaxed for foreign nationals, whatever the frequency. Only local or business activity is taxed.'},
   tax:{days:null,window:null,label:'No worldwide-tax day trap for foreigners',
     note:'Foreign nationals — resident OR non-resident — are taxed on Philippine-source income only. Staying long makes you a ‘resident alien’ but does NOT expose foreign income. One of the few places where the day count barely matters for tax.'},
   crypto:{stance:'good',head:'Foreign-source gains untaxed for aliens',
@@ -231,6 +242,7 @@ PH: {
 },
 
 KH: {
+  trading:{stance:'warn',head:'Worldwide in law, enforcement tightening',body:'Residents owe worldwide tax on paper, and no clear crypto-trading framework exists. Fine to travel, not to build on.'},
   tax:{days:182,window:'roll',label:'>182 days in a 12-month period',
     note:'Resident if present >182 days in any 12-month period ending in the tax year, or if your principal place of abode is in Cambodia.'},
   crypto:{stance:'warn',head:'Worldwide in law, formalising fast',
@@ -242,6 +254,7 @@ KH: {
 },
 
 LA: {
+  trading:{stance:'warn',head:'No framework',body:'No meaningful individual crypto rules — low certainty. Not a place to trade seriously.'},
   tax:{days:183,window:'roll',label:'~183 days (rules thin, rarely enforced)',
     note:'Residency rules exist on paper (~183 days) but administration is thin. Low practical risk, low legal certainty.'},
   crypto:{stance:'warn',head:'No real framework',
@@ -251,6 +264,7 @@ LA: {
 },
 
 SG: {
+  trading:{stance:'warn',head:'Occasional fine; habitual = business',body:'Investment gains are tax-free, but IRAS can treat habitual, business-like trading as taxable trade income (up to ~22%) under badges-of-trade. Superb for occasional, risky as a profession.'},
   tax:{days:183,window:'cal',label:'≥183 days / calendar year',
     note:'183 days in a calendar year = resident (also 183 straddling two years under the two-year admin concession).'},
   crypto:{stance:'good',head:'No CGT; best off-ramp infrastructure in Asia',
@@ -260,6 +274,7 @@ SG: {
 },
 
 HK: {
+  trading:{stance:'warn',head:'Occasional fine; business-like is taxed',body:'No CGT on investment gains, but frequent business-like trading can fall under the 15% profits tax. Fine kept clearly casual.'},
   tax:{days:180,window:'both',label:'Territorial — ~180d guideline',
     note:'Territorial system; ordinary residence/180-day presence matters mainly for certificates. Foreign-source gains untaxed regardless.'},
   crypto:{stance:'good',head:'No CGT, territorial, licensed retail exchanges',
@@ -269,6 +284,7 @@ HK: {
 },
 
 TW: {
+  trading:{stance:'warn',head:'20% AMT only above ~NT$7.5M',body:'Offshore trading gains fall under AMT at 20% only above ~NT$7.5M/yr (≈€200k); below that, effectively untaxed. Planful only in big years.'},
   tax:{days:183,window:'cal',label:'≥183 days / calendar year',
     note:'183 days in a calendar year = resident.'},
   crypto:{stance:'warn',head:'AMT on big overseas income',
@@ -278,6 +294,7 @@ TW: {
 },
 
 KR: {
+  trading:{stance:'warn',head:'20% scheduled 2027 (delayed before)',body:'No individual crypto gains tax yet; a 20% tax is slated for Jan 2027 after repeated delays. Short-term foreign residents are taxed on foreign gains only if remitted — a real lever.'},
   tax:{days:183,window:'roll'
 ,label:'≥183 days (rolling)',
     note:'183 days’ presence (or domicile) = resident. Useful nuance: foreign nationals resident ≤5 of the past 10 years are taxed on foreign-source income only to the extent it is paid into / remitted to Korea.'},
@@ -288,6 +305,7 @@ KR: {
 },
 
 CN: {
+  trading:{stance:'bad',head:'Banned',body:'Crypto trading is illegal — no lawful venue at all. Travel only.'},
   tax:{days:183,window:'cal',label:'≥183 days / calendar year',
     note:'183 days = resident; worldwide taxation phases in after 6 consecutive resident years (the ‘6-year rule’ — breakable with a 30-day absence).'},
   crypto:{stance:'bad',head:'Trading banned — no lawful off-ramp',
@@ -297,6 +315,7 @@ CN: {
 },
 
 AE: {
+  trading:{stance:'good',head:'0% — the daytrader benchmark',body:'No income tax, no CGT, no wealth tax: trade as often as you like, individual gains untaxed regardless of frequency. The cleanest active-trading base.'},
   tax:{days:90,window:'roll',label:'TRC: 183d, or 90d + ties (rolling)',
     note:'No personal income tax. Tax Residency Certificate: 183 days, or 90 days + residence visa/business ties. Runway tracks the 90-day TRC threshold since here you WANT to cross it.'},
   crypto:{stance:'good',head:'0% — the benchmark',
@@ -306,6 +325,7 @@ AE: {
 },
 
 NL: {
+  trading:{stance:'warn',head:'Free to trade now; taxed from 2028',body:'Box 3 reads only your year-end wealth value, so trading frequency is irrelevant and per-trade gains are untaxed pre-2028. The 2028 actual-return regime taxes the gains themselves, ending this edge.'},
   tax:{days:null,window:null,label:'Facts & circumstances — not a day count',
     note:'Dutch residency follows your centre of life: home, partner, ties — not days. Exit properly: deregister (RNI), end/sell housing, move the centre of life visibly. After that, treaty tiebreakers protect you. Return visits in the first years: keep them short and tie-free; months-long stays + a kept-available home is how people get pulled back in.'},
   crypto:{stance:'warn',head:'Exit timeline & box 3',
@@ -313,6 +333,19 @@ NL: {
   visa:{days:null,label:'Home country',note:'Track post-departure visit days here so return trips stay deliberately modest.'},
   verified:'2026-07-12',
   sources:[['Eerste Kamer — Wet werkelijk rendement box 3 (36.748)','https://www.eerstekamer.nl/wetsvoorstel/36748_wet_werkelijk_rendement_box'],['Rijksoverheid — plannen box 3','https://www.rijksoverheid.nl/onderwerpen/inkomstenbelasting/plannen-werkelijk-rendement-box-3']]
+},
+
+GE: {
+  trading:{stance:'good',head:'0% for individuals, any frequency',body:'Individual crypto gains are untaxed (deemed non-Georgian-source) however often you trade. Only if you formally run it as a business does the 1%-turnover small-business regime apply.'},
+  tax:{days:183,window:'roll',label:'≥183 days — or the HNWI fast-track',
+    note:'183 days present in a 12-month period makes you a Georgian tax resident. Georgia is territorial — only Georgian-source income is taxed — so becoming resident here is generally SAFE for a crypto holder. A separate High-Net-Worth-Individual route grants residency WITHOUT the day count (≈3M GEL global assets, or 200k GEL/yr income for 3 years, plus a Georgian tie such as US$500k property or 25k GEL local income), taking ~3–5 months.'},
+  crypto:{stance:'good',head:'0% on individual crypto — a genuine haven',
+    body:'The Revenue Service treats crypto disposals by individuals as non-Georgian-source, so personal crypto gains are untaxed (0%) regardless of size. No wealth, inheritance or gift tax either. Run trading as a registered business instead and you can elect Small-Business status (1% of turnover up to 500k GEL). One 2026 wrinkle: tourists must now carry health/accident insurance (≥30,000 GEL cover).'},
+  visa:{days:365,label:'365 days visa-free — exceptional',
+    note:'Georgia grants Dutch (and all EU) citizens a full 365 days visa-free on entry — among the most generous regimes anywhere, and a natural fit for banking the 183 days that establish tax residency. EU nationals can enter on an ID card. Formal residence permits are a separate track for permanence.'},
+  routes:'365-day visa-free stay → bank the 183 days for tax residency → HNWI status or a residence permit if you commit.',
+  verified:'2026-07-13',
+  sources:[['Andersen — crypto tax for individuals in Georgia','https://ge.andersen.com/crypto-tax-georgia-individuals/'],['gegidze — HNWI tax residency in Georgia','https://www.gegidze.com/post/hnwi-tax-residency-the-high-net-worth-individual-route-asset-requirements-and-tax-benefits-in-geo'],['Visa policy of Georgia — Wikipedia','https://en.wikipedia.org/wiki/Visa_policy_of_Georgia']]
 }
 
 };
