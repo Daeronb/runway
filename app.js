@@ -1,5 +1,5 @@
 'use strict';
-const APP_VERSION='v4';
+const APP_VERSION='v7';
 
 /* ---------------- state ---------------- */
 const LS='runway:v1';
@@ -8,7 +8,7 @@ function load(){
   let s=null;
   try{const j=JSON.parse(localStorage.getItem(LS));if(j&&Array.isArray(j.trips))s=j;}catch(e){}
   s=s||{trips:[],settings:{nlDeparture:''}};
-  s.finance=Object.assign({bonds:0,yieldPct:3.2,cash:0,cryptoVal:0,cryptoBasis:0,floor:350000,colMode:'n',thRemit:20000,thLTR:false,jp2028:false,krRemit:false},s.finance||{});
+  s.finance=Object.assign({bonds:0,yieldPct:3.2,cash:0,cryptoVal:0,cryptoBasis:0,floor:350000,colMode:'n',thRemit:20000,thLTR:false,jp2028:false,krRemit:false,uyHoliday:false},s.finance||{});
   s.fx=s.fx||null;
   return s;
 }
@@ -258,7 +258,7 @@ function flagsSupported(){
   }catch(e){_flagOK=true;}
   return _flagOK;
 }
-let openCC=null;
+let openCC=null, openStrat=null;
 
 function renderCountries(){
   const asOf=todayS();
@@ -300,6 +300,21 @@ function renderCountries(){
 function openCountry(cc){openCC=cc;renderCountries();
   const el=document.querySelector(`.country[data-cc="${cc}"]`);if(el)el.scrollIntoView({behavior:'smooth',block:'start'});}
 
+function renderLearn(){
+  let h=`<div class="muted small pad">Field notes for the plan — tap a card to open. Written dense on purpose; all information, not advice. Re-verify before acting.</div>`;
+  for(const sc of STRATEGY){const so=openStrat===sc.id;
+    h+=`<div class="card strat st-${sc.accent} ${so?'open':''}" data-strat="${sc.id}">
+      <div class="shead"><span class="sicon">${sc.icon}</span>
+        <span class="tbody"><b>${esc(sc.title)}</b><br><span class="muted small">${esc(sc.sub)}</span></span>
+        <span class="chev">${so?'\u25BE':'\u203A'}</span></div>
+      ${so?`<div class="cbody">${sc.checklist?`<ol class="chk">${sc.checklist.map(i=>`<li>${esc(i)}</li>`).join('')}</ol>`:''}${(sc.body||[]).map(x=>`<div class="sect"><b>${esc(x.h)}</b><p>${esc(x.p)}</p></div>`).join('')}<div class="muted small">Not tax advice — get one professional review before acting. Verified ${fmt(sc.verified)}</div>${sc.sources&&sc.sources.length?`<div class="srcs">${sc.sources.map(z=>`<a href="${z[1]}" target="_blank" rel="noopener">${esc(z[0])} \u2197</a>`).join('')}</div>`:''}</div>`:''}
+    </div>`;}
+  $('#view-learn').innerHTML=h;
+  document.querySelectorAll('#view-learn .strat').forEach(el=>{
+    el.querySelector('.shead').onclick=()=>{openStrat=openStrat===el.dataset.strat?null:el.dataset.strat;renderLearn();};
+  });
+}
+
 /* ---------------- MAP ---------------- */
 function renderMap(){
   const asOf=todayS();
@@ -317,6 +332,7 @@ function renderMap(){
       ${st?`<span class="stbadge sb-${st}">${STANCE_GLYPH[st]}</span>`:''}
       ${showFlag?`<span class="tf">${c.f}</span>`:''}<span class="tn">${cc}</span><span class="td ${lv&&lv!=='ok'?lv:''}">${td&&td.days>0?warnGlyph+td.days+'/'+td.limit:'&nbsp;'}</span></div>`;
   }
+  tiles+=`<div class="mapband" style="grid-column:1/-1;grid-row:8">South America</div>`;
   $('#view-map').innerHTML=legendHTML()+`<div class="mapwrap"><div class="maptiles">${tiles}</div></div>
     <div class="muted small pad" style="margin-top:10px">Schematic map — tap a country for its snapshot. Tiles fill amber/red as tax-day clocks approach thresholds; dashed tiles have no researched rule card yet.</div>`;
   document.querySelectorAll('.tile').forEach(el=>el.onclick=()=>mapSheet(el.dataset.cc));
@@ -493,6 +509,7 @@ function renderMoney(){
   }
 
   // runway
+  h+=`<div class="muted small pad" style="margin:2px 0 6px">Selling while between countries? Read the <a href="#" id="go-strat">off-ramp strategy cards \u2197</a> in Learn first.</div>`;
   h+=`<h2>Runway to the floor</h2>`;
   const {rows:rw,capital,yieldMo}=runwayRows();
   if(!capital){
@@ -507,7 +524,7 @@ function renderMoney(){
       ${rw.map(r=>`<div class="frow frow-run">
         <span class="tflag">${cflag(r.cc)}</span>
         <span class="tbody"><b>${esc(cname(r.cc))}</b><br><span class="muted small">${esc(r.city)} · ${eur(r.burn)}/mo</span></span>
-        <span class="famt ${r.months===Infinity?'good':r.months<24?'bad':r.months<48?'warn':''}">${r.months===Infinity?'∞ covered':Math.round(r.months)+' mo'}</span>
+        <span class="famt ${r.months===Infinity?'good':r.months<24?'bad':r.months<48?'warn':''}">${r.months===Infinity?'∞ covered':Math.round(r.months)+' mo'}<br><span class="small ${r.net<=0?'good':'warn'}">${r.net<=0?'✓ +'+eur(yieldMo-r.burn)+'/mo':'▾ −'+eur(r.net)+'/mo'}</span></span>
       </div>`).join('')}
       <div class="muted small" style="margin-top:8px">∞ = yield alone covers the burn; capital never drops. Months = time until liquid capital hits the floor at that burn.</div>
     </div>`;
@@ -527,6 +544,7 @@ function renderMoney(){
   if(fr)fr.onclick=()=>{state.finance.colMode='f';save();renderMoney();};
   if(no)no.onclick=()=>{state.finance.colMode='n';save();renderMoney();};
   document.querySelectorAll('.frow[data-cc]').forEach(el=>el.onclick=()=>offRampSheet(el.dataset.cc));
+  const gs=$('#go-strat');if(gs)gs.onclick=e=>{e.preventDefault();openStrat='emergency';showView('learn');};
   const fx=$('#fi-fx');if(fx)fx.onclick=e=>{e.preventDefault();fetchFX(true);};
   fetchFX(false);
 }
@@ -541,6 +559,7 @@ function offRampSheet(cc){
     <label class="row"><input type="checkbox" id="ff-thltr" ${f.thLTR?'checked':''}> I hold an LTR visa (remittance exemption)</label>`;
   if(cc==='JP')toggles=`<label class="row"><input type="checkbox" id="ff-jp28" ${f.jp2028?'checked':''}> Assume 2028 reform passed + FSA-listed asset (20.315%)</label>`;
   if(cc==='KR')toggles=`<label class="row"><input type="checkbox" id="ff-krrem" ${f.krRemit?'checked':''}> Proceeds remitted into Korea</label>`;
+  if(cc==='UY')toggles=`<label class="row"><input type="checkbox" id="ff-uyhol" ${f.uyHoliday?'checked':''}> New-resident tax holiday elected (foreign income exempt)</label>`;
   openSheet(`
     <h3>${cflag(cc)} ${esc(m.n)} off-ramp</h3>
     <div class="sect"><b>Estimated tax: ${r.tax==null?'n/a':(r.rough?'~':'')+eur(r.tax)}</b>${r.tax>0&&gain>0?` <span class="muted">(${Math.round(r.tax/gain*100)}% of gain)</span>`:''}</div>
@@ -557,6 +576,7 @@ function offRampSheet(cc){
   const tl=$('#ff-thltr');if(tl)tl.onchange=()=>{state.finance.thLTR=tl.checked;save();offRampSheet(cc);};
   const j8=$('#ff-jp28');if(j8)j8.onchange=()=>{state.finance.jp2028=j8.checked;save();offRampSheet(cc);};
   const kr=$('#ff-krrem');if(kr)kr.onchange=()=>{state.finance.krRemit=kr.checked;save();offRampSheet(cc);};
+  const uh=$('#ff-uyhol');if(uh)uh.onchange=()=>{state.finance.uyHoliday=uh.checked;save();offRampSheet(cc);};
 }
 
 /* ---------------- SHEET / MENU ---------------- */
@@ -640,6 +660,7 @@ function renderAll(){
   if(curView==='countries')renderCountries();
   if(curView==='plan')renderPlan();
   if(curView==='money')renderMoney();
+  if(curView==='learn')renderLearn();
 }
 
 /* ---------------- boot ---------------- */

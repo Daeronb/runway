@@ -55,6 +55,16 @@ h3{margin:0 0 12px}
 .stale{background:var(--amber);color:#3a2500;font-size:11px;font-weight:700;padding:1px 7px;border-radius:8px;vertical-align:middle}
 .srcs{display:flex;flex-direction:column;gap:4px;margin-top:8px}
 .srcs a{color:var(--accent2);font-size:13px;text-decoration:none}
+.strat .shead{display:flex;align-items:center;gap:12px;cursor:pointer}
+.sicon{font-size:22px;width:26px;text-align:center;flex:none}
+.strat{border-left:4px solid var(--line)}
+.strat.st-good{border-left-color:rgba(53,208,186,.9)}
+.strat.st-warn{border-left-color:rgba(255,193,77,.9)}
+.strat.st-bad{border-left-color:rgba(255,92,122,.9)}
+.strat.st-info{border-left-color:rgba(96,165,250,.9)}
+.strat .cbody{margin-top:10px;border-top:1px solid var(--line);padding-top:10px}
+.chk{margin:0 0 10px;padding-left:20px}
+.chk li{margin:0 0 9px;color:#c6d0e4;font-size:14.5px;line-height:1.45}
 
 /* tabbar */
 #tabbar{position:fixed;bottom:0;left:0;right:0;z-index:5;display:flex;justify-content:space-around;
@@ -104,6 +114,7 @@ h3{margin:0 0 12px}
 .tile.lv-amber{background:rgba(255,180,84,.16)}
 .tile.lv-red,.tile.lv-over{background:rgba(255,107,107,.18)}
 .tile.dim{opacity:.5;border-style:dashed}
+.mapband{display:flex;align-items:center;font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;border-top:1px dashed var(--line);padding:6px 2px 2px}
 
 /* stance pills + legend (v2) */
 .pill{font-size:11px;font-weight:700;padding:1px 8px;border-radius:9px;vertical-align:middle;white-space:nowrap}

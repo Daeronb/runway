@@ -24,6 +24,8 @@ const COUNTRIES = {
   KZ:{n:'Kazakhstan',f:'\u{1F1F0}\u{1F1FF}',r:'Central Asia',m:[3,0]}, KG:{n:'Kyrgyzstan',f:'\u{1F1F0}\u{1F1EC}',r:'Central Asia',m:[3,1]},
   UZ:{n:'Uzbekistan',f:'\u{1F1FA}\u{1F1FF}',r:'Central Asia',m:[2,1]}, GE:{n:'Georgia',f:'\u{1F1EC}\u{1F1EA}',r:'Central Asia',m:[1,1]},
   AE:{n:'UAE (Dubai)',f:'\u{1F1E6}\u{1F1EA}',r:'Benchmark',m:[0,2]},
+  PY:{n:'Paraguay',f:'\u{1F1F5}\u{1F1FE}',r:'South America',m:[0,8]}, UY:{n:'Uruguay',f:'\u{1F1FA}\u{1F1FE}',r:'South America',m:[1,8]},
+  AR:{n:'Argentina',f:'\u{1F1E6}\u{1F1F7}',r:'South America',m:[2,8]},
   NL:{n:'Netherlands',f:'\u{1F1F3}\u{1F1F1}',r:'Home',m:[0,0]},
   XX:{n:'Other / in transit',f:'\u{1F30F}',r:'Other'}
 };
@@ -36,7 +38,129 @@ const GENERIC_RULE = {
   verified:RULES_BUILT, sources:[]
 };
 
+const STRATEGY=[
+{ id:'nowhere', icon:'\u{1F9ED}', accent:'warn',
+  title:'Perpetual traveler / “tax-resident nowhere”',
+  sub:'Can you just sell while resident nowhere? Legal, but fragile.',
+  body:[
+   {h:'Short answer',p:'Being tax-resident nowhere at the moment you sell is legally possible, and crypto gains have no fixed “source country” — so in principle no state has an automatic claim. The Netherlands has no exit tax on privately-held crypto: it is not aanmerkelijk belang, so no conserverende aanslag applies, and box 3 is an annual levy, not a toll on the way out. But “nowhere” is a weak position in practice — the three edges below are where it breaks.'},
+   {h:'Edge 1 — residency judges the WHOLE year',p:'Most day-count rules look back over the entire calendar year, not just the day you sold. Sell in March, then spend 180 days in Thailand by October, and you are Thai tax-resident for that year — including the March sale. Vietnam’s 12-month window can reach across a year boundary. And the Netherlands can deem you never to have left if you return within a year without genuinely becoming resident somewhere else. Lesson: in the year you sell, do not accidentally become resident anywhere that taxes worldwide income.'},
+   {h:'Edge 2 — banks and exchanges force a residence on you',p:'Every exchange and bank now demands a declared tax residence, and EU crypto reporting (DAC8/CARF) is live from 1 Jan 2026: providers collect your tax residence + transaction data and report it to that country’s tax authority (first exchange due by Sep 2027). Declare “nowhere” and you are either refused or reported to the last residence on file — which for you is the Netherlands. This is why getting a Tax Residency Certificate from a friendly country (Malaysia, UAE) BEFORE a big off-ramp beats nowhere-residency: it gives the report a clean place to land.'},
+   {h:'Edge 3 — proof for your ~2031 return to NL',p:'When you move back with the proceeds, the Belastingdienst can ask where the money came from. Your defence is a clean paper trail: the trip log in this app, exported backups, exchange statements, and ideally a TRC showing you were genuinely resident somewhere low- or zero-rate when you sold. “I was resident nowhere” is the answer that invites the most questions.'}
+  ],
+  verified:'2026-07-13',
+  sources:[['EU Commission — DAC8','https://taxation-customs.ec.europa.eu/taxation/tax-transparency-cooperation/administrative-co-operation-and-mutual-assistance/directive-administrative-cooperation-dac/dac8_en'],['Belastingdienst — emigration checklist','https://www.belastingdienst.nl/wps/wcm/connect/en/individuals/content/checklist-emigration']]
+},
+{ id:'sequencing', icon:'\u{1FA9C}', accent:'good',
+  title:'Off-ramp sequencing checklist (Kraken)',
+  sub:'The order of operations for a clean cash-out.',
+  checklist:[
+   'Choose the residence you will sell UNDER first — a 0%/low-rate friendly country (Malaysia, Philippines, UAE, Paraguay) where you can get a real Tax Residency Certificate — and set it up BEFORE you sell, not after.',
+   'Become genuinely resident there: enough days, a TRC, a cédula — so the residence you declare to Kraken and your bank is true and defensible.',
+   'Mind the calendar year: sell in a year where no OTHER country’s day-count also catches you. Cleanest pattern — sell in year N while not yet resident in any worldwide-tax country, or use a residence where it is moot (Malaysia taxes no foreign capital gains anyway).',
+   'Update your residence on Kraken and banks — expect re-KYC. Kraken’s EU arm (Payward Europe, MiCA-licensed via the Central Bank of Ireland) only serves the 30 EU/EEA countries; moving to Thailand/Malaysia/Philippines migrates you to Kraken’s non-EEA entity and a fresh verification. Do this deliberately, not mid-sale.',
+   'Send coins from cold storage to the exchange only when ready to sell — minimise the window they sit on a platform (counterparty risk; no deposit-guarantee scheme covers crypto or the cash proceeds).',
+   'Sell, then move the fiat OUT quickly to a bank/EMI that accepts your new residence. A Dutch bank may restrict or close a non-EU-resident account; Wise and Revolut are also residence-based — line up the receiving account before you sell.',
+   'Keep everything: exchange statements, TRC, trip-log export. This is your source-of-funds evidence for the ~2031 NL return.'
+  ],
+  body:[
+   {h:'The principle under all of it',p:'The taxable event is the SALE, not the withdrawal. What matters is where you are tax-resident at the moment of sale — later residency does not reach back, but same-calendar-year rules can. Everything above is about making sure the residence you sell under is the one you want, and that it is real.'}
+  ],
+  verified:'2026-07-13',
+  sources:[['Kraken — MiCA license (Central Bank of Ireland)','https://blog.kraken.com/news/mica-license-central-bank-of-ireland'],['Kraken — where licensed/regulated','https://support.kraken.com/articles/where-is-kraken-licensed-or-regulated'],['EU Commission — DAC8','https://taxation-customs.ec.europa.eu/taxation/tax-transparency-cooperation/administrative-co-operation-and-mutual-assistance/directive-administrative-cooperation-dac/dac8_en']]
+},
+{ id:'emergency', icon:'\u{1F6A8}', accent:'bad',
+  title:'Emergency cash-out (sudden bull run)',
+  sub:'~3 days to react. What actually maximises what you keep.',
+  body:[
+   {h:'Before 2028 — just go home',p:'Pre-2028 the Netherlands is CHEAP for a one-time sale: Box 3 taxes ~2.8% of your holdings’ 1-January VALUE and does NOT tax the realised gain at all. So if a life-changing run hits while you are already out but before the 2028 werkelijk-rendement regime, the play is simple: fly back to NL, re-register (returning within a year can even deem you never to have left), sell as a Dutch resident, pay the modest wealth tax, done. No 30%+ CGT anywhere. This is the base case for 2026–27.'},
+   {h:'From 2028 — the real scenario',p:'Once NL taxes gains (including unrealised) at ~36%, going home is the expensive option and this playbook applies. Core truth: what taxes the sale is your tax residence on sale day PLUS where you spend the rest of the calendar year. In 3 days you cannot build a genuine new residency or TRC — so do not try. Sell from a place that is 0% even WITHOUT residency, and do not trigger a taxed residency afterwards.'},
+   {h:'The 3-day playbook',p:'1) Fly to a zero-CGT, deep-liquidity hub — Singapore or Hong Kong (no CGT, best banking/OTC for 8-figure sums, 90d visa-free); Dubai as backup. 2) The bottleneck is BANKING, not tax — line up an OTC desk plus a receiving bank/EMI that will not freeze a sudden large inflow. 3) Sell (one taxable event; split only for liquidity, or to straddle a Dec/Jan year boundary). 4) Get the fiat off the exchange fast. 5) Lock your calendar so you cross no country’s 180/183-day worldwide-tax threshold this year. 6) Call a cross-border crypto tax advisor the same day — on this much money the fee is a rounding error.'},
+   {h:'Prep beats scramble',p:'The people who win this set it up in advance: an accurate, favourable declared residence on Kraken and banks; a pre-opened receiving account in a 0% hub; a pre-KYC’d OTC desk; live day-count awareness (this app); and an NL exit timed around 2028. Do those five and “sell now” becomes a phone call, not a crisis.'}
+  ],
+  verified:'2026-07-13',
+  sources:[['EU Commission — DAC8','https://taxation-customs.ec.europa.eu/taxation/tax-transparency-cooperation/administrative-co-operation-and-mutual-assistance/directive-administrative-cooperation-dac/dac8_en'],['IMI — livable 0% crypto countries 2026','https://www.imidaily.com/analysis/20-livable-countries-that-dont-tax-crypto-gains-in-2026/'],['Deloitte — NL Box 3 actual-return bill','https://www.deloitte.com/nl/en/services/tax/perspectives/wetsvoorstel-wet-werkelijk-rendement-box-3-aangenomen-tweede-kamer.html']]
+},
+{ id:'buysell', icon:'\u{1F4B1}', accent:'info',
+  title:'Buy vs sell: what actually triggers tax',
+  sub:'Only disposals are taxable. Buying is free.',
+  body:[
+   {h:'Buying with fiat = nothing to declare',p:'Converting euros to crypto is never an income or gains event, anywhere. It only sets your cost basis and starts your holding clock. Your €45k cash → crypto on Kraken triggers zero tax. You can accumulate and rebalance INTO crypto freely.'},
+   {h:'What DOES trigger',p:'Disposals only: (a) selling crypto for fiat; (b) swapping one coin for another — a crypto-to-crypto trade is a SALE of the first coin in most CGT countries, so a “buy” funded by selling BTC is taxable; (c) spending crypto on goods. Gain = proceeds minus cost basis at that moment.'},
+   {h:'Two exceptions to “buying is free”',p:'1) WEALTH taxes hit the holding regardless of buy/sell — NL Box 3, Argentina Bienes Personales, Switzerland — they tax the VALUE on an assessment date, so buying more raises that base. 2) A few countries add tiny transaction taxes on trades (including buys) on their LOCAL licensed exchanges (Indonesia; India’s 1% TDS mechanics). Neither touches you buying on Kraken’s EU entity.'},
+   {h:'Upshot for you',p:'Accumulating and rebalancing is tax-silent. The entire plan is about the SELL — when, and tax-resident where. Until then only your NL Box-3 value (pre-2028) and counterparty risk on Kraken matter.'}
+  ],
+  verified:'2026-07-13',
+  sources:[['CoinLedger — crypto tax guide 2026','https://coinledger.io/guides/crypto-tax'],['Koinly — crypto taxes 2026','https://koinly.io/guides/crypto-taxes/']]
+},
+{ id:'trading', icon:'\u{26A1}', accent:'good',
+  title:'Trading often without getting taxed',
+  sub:'Where occasional day-trading stays untaxed.',
+  body:[
+   {h:'Why NL works now',p:'NL does not tax per-trade gains — Box 3 only reads your year-end wealth VALUE, so trading frequency is irrelevant pre-2028. From 2028 the actual-return regime taxes the gains themselves, killing this edge — another reason the whole plan pivots on 2028.'},
+   {h:'The best replacements',p:'UAE (Dubai): 0% personal income, 0% CGT, no wealth tax — trade as often as you like, individual gains untaxed regardless of frequency. The cleanest daytrader base. Georgia: individual crypto gains officially untaxed (deemed non-Georgian-source), also frequency-agnostic. Both beat NL because there is not even a year-end wealth levy.'},
+   {h:'The reclassification catch',p:'No-CGT countries that DO watch frequency: Malaysia, Singapore, Hong Kong, Malta. Occasional trades are fine, but high-frequency “business-like” trading can be reclassified as taxable trade income (SG up to ~22%, HK 15% profits tax). Fine now-and-again, risky as a full-time activity. Thailand is remittance-based: trade offshore, do not remit, stays untaxed.'},
+   {h:'Bottom line',p:'For active-ish trading with zero tax and no frequency risk: UAE > Georgia > (NL pre-2028). For your Asia base, Malaysia / HK / SG are fine if trading stays clearly occasional and non-professional.'}
+  ],
+  verified:'2026-07-13',
+  sources:[['Koinly — crypto tax-free countries 2026','https://koinly.io/blog/crypto-tax-free-countries/'],['TokenTax — Dubai crypto tax 2026','https://tokentax.co/blog/dubai-crypto-tax'],['TaxRavens — Georgia crypto 0%','https://taxravens.com/en/georgia/crypto-tax-haven']]
+},
+{ id:'systems', icon:'\u{1F9EE}', accent:'info',
+  title:'The 3 tax systems (the idea behind every card)',
+  sub:'Territorial vs worldwide vs remittance.',
+  body:[
+   {h:'Worldwide',p:'Taxes your global income and gains once you are resident, wherever earned. NL, Japan, Korea, India, Argentina, most of the West. This is the type you must AVOID being resident in during a big sale.'},
+   {h:'Territorial',p:'Taxes only locally-sourced income; foreign income and gains are untaxed. Paraguay, Philippines (for foreigners), Hong Kong, Malaysia (largely), Georgia (crypto deemed non-source). Off-ramp foreign-held crypto here and it is 0%.'},
+   {h:'Remittance',p:'Foreign income is taxed only if you BRING it into the country. Thailand (post-2024 rules). Sell offshore, keep the proceeds offshore, remit only living money → little or no tax. A timing game.'},
+   {h:'Plus: no-tax and wealth-tax',p:'No-tax hubs (UAE) tax nothing personal. Wealth-tax systems (NL Box 3, Switzerland, Argentina) tax the VALUE you hold, not the gain — friendly to trading, but a levy on merely owning. Match your move to the system, not the marketing.'}
+  ],
+  verified:'2026-07-13',
+  sources:[['IMI — 0% crypto countries 2026','https://www.imidaily.com/analysis/20-livable-countries-that-dont-tax-crypto-gains-in-2026/'],['Rumavi — territorial tax SE Asia','https://rumavi.com/en/property-guides/territorial-tax-residency-and-overseas-income-in-southeast-asia']]
+}
+];
+
 const RULES = {
+
+IN: {
+  tax:{days:182,window:'cal',label:'≥182 days / year → worldwide income taxed',
+    note:'182 days in a tax year (1 Apr–31 Mar) makes you a resident, and residents are taxed on WORLDWIDE income. The new Income-Tax Act 2025 (in force 1 Apr 2026) keeps 182 days as the core test; a 120-day trigger only bites people with over ₹15 lakh of India-source income. Stay under 182 days = non-resident, only India-source income taxed. Returning NRIs get an RNOR grace that shields foreign income for up to ~3 years.'},
+  crypto:{stance:'bad',head:'Brutal — flat 30% + 1% TDS, no loss offset',
+    body:'For residents, gains on Virtual Digital Assets (VDA = crypto) are taxed at a FLAT 30% — plus a 4% cess and any surcharge, so ~34%+ effective — with NO holding-period relief and NO offsetting of losses (not between coins, not against other income). A separate 1% tax is deducted at source (TDS) on every transfer. Confirmed unchanged for the 2026-27 budget. One of the harshest crypto regimes anywhere: travel freely, but NEVER off-ramp or become tax-resident here while holding gains.'},
+  visa:{days:null,label:'e-Visa required (no visa-free entry)',
+    note:'Dutch citizens must get an e-Tourist Visa in advance (30-day, 1-year or 5-year options; the multi-year ones cap each visit at ~90 days). No visa-free or visa-on-arrival for NL passports.'},
+  verified:'2026-07-13',
+  sources:[['Koinly — India crypto tax 2026','https://koinly.io/guides/crypto-tax-india/'],['ClearTax — residential status','https://cleartax.in/s/residential-status'],['India Briefing — new NRI residency rules 2026','https://www.india-briefing.com/news/understanding-the-new-tax-residency-rules-for-nris-36318.html/']]
+},
+
+PY: {
+  tax:{days:null,window:null,label:'Territorial — no day-count trap',
+    note:'Paraguay taxes only Paraguay-source income. There is NO 183-day residency test: tax residency comes from holding legal residency + a cédula (national ID) + an active RUC (tax number). Foreign-source income — including foreign crypto — sits outside the tax base entirely.'},
+  crypto:{stance:'good',head:'0% on foreign-source crypto',
+    body:'Under the territorial system (Law 6380), gains on crypto held and sold on FOREIGN exchanges are foreign-source and taxed at 0%. Only Paraguay-source income is taxed, at a flat 8–10%. Resolution 47/2026 adds a REPORTING duty — cumulative crypto activity over ~US$5,000/yr must be disclosed (wallets, tx hashes, counterparties) — but does NOT change the 0% rate. Cheap, fast residency plus no day trap make this a genuine off-ramp base.'},
+  visa:{days:90,label:'90 days visa-free',note:'90-day visa-free entry for Dutch citizens. Permanent residency + cédula is famously cheap and fast (a single visit and a bank deposit), which is what actually establishes tax residency.'},
+  verified:'2026-07-13',
+  sources:[['Paraguay Sovereign — territorial tax','https://paraguaysovereign.com/tax/territorial-tax-explained/'],['Plan B Expat — Paraguay crypto reporting 2026','https://www.planbexpat.com/blog/paraguay-crypto-reporting-rules-2026']]
+},
+
+UY: {
+  tax:{days:183,window:'cal',label:'≥183 days / year — foreign income 12%, or elect a holiday',
+    note:'183 days (or a centre-of-economic-interest test) makes you resident. Since 1 Jan 2026 (Law 20.446) foreign-source investment income & capital gains — crypto included — are taxed at a flat 12%. New residents may instead ELECT a tax holiday: foreign income exempt for the arrival year plus 10 more (~11 years), then 6% for 5 years. The holiday needs 183+ days AND a qualifying investment (~US$2M real estate or US$100k/yr innovation fund). People who elected before 2026 are grandfathered on the old terms.'},
+  crypto:{stance:'warn',head:'12% flat — or 0% under the elected holiday',
+    body:'Crypto is treated as capital income: a standard resident pays 12% IRPF on foreign-source gains. Elect the new-resident tax holiday and foreign crypto gains are exempt for ~11 years — but that route demands real physical presence plus a sizeable qualifying investment, so it is not a light-touch option. Watch the look-through rule (owning >5% of a foreign company attributes its income to you personally). Stable, well-run, treaty-light — but living costs are higher than its neighbours.'},
+  visa:{days:90,label:'90 days visa-free',note:'90-day visa-free entry for Dutch citizens. Residency is straightforward, but if you want the tax holiday the election must be made in the first year.'},
+  verified:'2026-07-13',
+  sources:[['EY — Uruguay foreign-source investment income','https://www.ey.com/en_gl/technical/tax-alerts/uruguay-regulates-application-of-personal-income-tax-on-foreign-source-investment-income-and-capital-gains'],['IMI Daily — Uruguay 12% foreign income 2026','https://www.imidaily.com/latin-america/uruguay-raises-tax-holiday-threshold-to-us2-million-taxes-foreign-income-at-12/']]
+},
+
+AR: {
+  tax:{days:183,window:'cal',label:'Worldwide income; 12 months’ stay = resident',
+    note:'Residents are taxed on WORLDWIDE income. Foreigners acquire tax residency after 12 continuous months of authorised stay. On top of income tax sits Bienes Personales — a wealth tax on worldwide assets (crypto included) at 0.5–1.75%, scheduled to ease toward 0.25% by 2027. Strict BCRA currency controls (the parallel “blue” dollar, restricted access to official FX) make moving money in and out awkward.'},
+  crypto:{stance:'bad',head:'Worldwide tax PLUS a wealth tax on the coins',
+    body:'For residents, crypto gains are taxed up to 35% as ordinary income (or 15% if treated as a capital gain), AND the holdings themselves are hit every year by the Personal Assets (wealth) tax at 0.5–1.75% of value. Combined with currency controls, Argentina is a place to visit, not to off-ramp. Milei-era reforms (ARCA replacing AFIP, RIGI, periodic amnesties) are shifting fast — re-verify if it ever starts to look tempting.'},
+  visa:{days:90,label:'90 days visa-free',note:'90-day visa-free entry for Dutch citizens (extendable once). Currency controls make local banking clumsy for non-residents.'},
+  verified:'2026-07-13',
+  sources:[['PwC — Argentina other taxes (wealth tax)','https://taxsummaries.pwc.com/argentina/individual/other-taxes'],['MEXC — Argentina crypto tax guide 2026','https://www.mexc.co/en-IN/learn/article/argentina-crypto-tax-guide-2026-rates-rules-and-reporting/1']]
+},
 
 TH: {
   tax:{days:180,window:'cal',label:'≥180 days / calendar year',

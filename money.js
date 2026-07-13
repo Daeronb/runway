@@ -26,6 +26,10 @@ const COL={
   SG:{f:2800,n:4200,c:'Singapore'},
   HK:{f:2600,n:4000,c:'Hong Kong'},
   AE:{f:2500,n:3900,c:'Dubai'},
+  IN:{f:700, n:1300,c:'Goa (Bengaluru ≈ similar)'},
+  PY:{f:950, n:1500,c:'Asunción'},
+  UY:{f:1600,n:2300,c:'Montevideo'},
+  AR:{f:1300,n:2000,c:'Buenos Aires (peso-volatile)'},
   NL:{f:1900,n:2700,c:'non-Randstad (return reference)'}
 };
 
@@ -80,5 +84,12 @@ const TAX_MODELS={
   KH:{n:'Cambodia',calc:({gain})=>({tax:gain*.20,notes:['Worldwide income in law; modeled flat ~20%. Enforcement evolving — VERY rough.'],rough:true})},
   LA:{n:'Laos',calc:()=>({tax:null,notes:['No clear framework — unquantifiable. Do not off-ramp here.']})},
   CN:{n:'China',calc:()=>({tax:null,notes:['Trading banned — no lawful off-ramp.']})},
+  IN:{n:'India',calc:({gain})=>({tax:gain*.30,notes:['Flat 30% on crypto (VDA) gains — plus 4% cess & surcharge, so ~34% effective. NO holding-period relief, NO loss offset.','A separate 1% TDS is withheld on every transfer.','Only applies if you are India tax-resident (≥182 days). One of the harshest regimes — do not off-ramp here.'],rough:true})},
+  PY:{n:'Paraguay',calc:()=>({tax:0,notes:['Territorial: crypto sold on foreign exchanges is foreign-source → 0% tax.','Report crypto activity over ~US$5k/yr (Resolution 47/2026) — but the rate stays 0%.','No 183-day trap; residency via cédula + RUC.']})},
+  UY:{n:'Uruguay',calc:({gain,o})=>{
+    if(o.uyHoliday)return {tax:0,notes:['New-resident tax holiday elected: foreign crypto gains exempt for ~11 years.','Requires 183+ days AND a qualifying investment (~US$2M property or US$100k/yr fund).']};
+    return {tax:gain*.12,notes:['Standard resident: foreign-source capital gains (crypto) taxed at a flat 12% IRPF since 2026.','Toggle the holiday if you elect the new-resident exemption instead.'],rough:true};
+  }},
+  AR:{n:'Argentina',calc:({gain})=>({tax:gain*.15,notes:['Modeled at 15% (capital-gain treatment); can reach 35% if treated as ordinary income.','PLUS a yearly wealth tax of 0.5–1.75% on the crypto holdings themselves.','Currency controls complicate moving funds — avoid as an off-ramp.'],rough:true})},
   NL:{n:'Netherlands',calc:({gain})=>({tax:gain*.36,notes:['Reference: 2028 werkelijk-rendement regime ≈36% on gains as they accrue.','This is the number the whole plan routes around.'],rough:true})}
 };
